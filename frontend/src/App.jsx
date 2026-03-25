@@ -178,7 +178,7 @@ function App() {
 
       {/* 푸터 (과제 제출용 정보) */}
       <footer className="text-center mt-12 text-indigo-400 font-medium">
-        &copy; 2026 Todo Planner - 학번 이름 제출
+        &copy; 2026 Todo Planner - 20223132 임민수
       </footer>
 
     </div>
