@@ -83,17 +83,17 @@ function App() {
           </h1>
   
           {/* 3. 날짜 표시 영역을 날짜 선택기로 변경 */}
-          <div className="mt-4 inline-block bg-white/10 backdrop-blur-md px-6 py-2 rounded-full border border-white/20 hover:bg-white/20 transition-all">
-            <div className="text-indigo-50 font-semibold flex items-center gap-2">
-              <span className="text-xl">📅</span>
-              <input 
-                type="date" 
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent border-none outline-none cursor-pointer text-white font-bold [color-scheme:dark]"
-              />
-            </div>
-          </div>
+          <label className="mt-4 inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-6 py-2 rounded-full border border-white/20 hover:bg-white/20 transition-all cursor-pointer group">
+            <span className="text-xl">📅</span>
+            <input 
+              type="date" 
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              // 클릭 시 브라우저 날짜 선택기 강제 실행
+              onClick={(e) => e.target.showPicker && e.target.showPicker()}
+              className="bg-transparent border-none outline-none cursor-pointer text-white font-bold [color-scheme:dark] group-hover:text-indigo-100 transition-colors"
+            />
+          </label>
   
           <p className="text-indigo-100 mt-3 text-lg font-medium opacity-90">
             {selectedDate === new Date().toISOString().split('T')[0] ? "오늘" : selectedDate}의 할 일을 계획해보세요.
