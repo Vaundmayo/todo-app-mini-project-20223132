@@ -18,6 +18,7 @@ mongoose.connect(process.env.MONGODB_URI)
 const todoSchema = new mongoose.Schema({
   title: { type: String, required: true },
   completed: { type: Boolean, default: false },
+  date: { type: String, required: true }, 
   createdAt: { type: Date, default: Date.now }
 });
 const Todo = mongoose.model('Todo', todoSchema);
@@ -37,11 +38,15 @@ app.get('/api/todos', async (req, res) => {
 // [POST] 새로운 할 일 추가
 app.post('/api/todos', async (req, res) => {
   try {
-    const newTodo = new Todo({ title: req.body.title });
+    const { title, date } = req.body; // 👈 date를 추가로 받음
+    const newTodo = new Todo({ 
+      title, 
+      date: date || new Date().toISOString().split('T')[0] // 날짜가 없으면 오늘 날짜로 저장
+    });
     await newTodo.save();
     res.status(201).json(newTodo);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 });
 

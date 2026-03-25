@@ -16,7 +16,7 @@ function App() {
     try {
       const response = await axios.get(API_URL);
       // 최신순 정렬
-      setTodos(response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      setTodos(response.data);
     } catch (error) {
       console.error("데이터 로드 실패:", error);
     } finally {
@@ -29,16 +29,17 @@ function App() {
   }, []);
 
   // 2. 현재 선택된 날짜에 해당하는 할 일만 필터링
-  const filteredTodos = todos.filter(todo => {
-    const todoDate = new Date(todo.createdAt).toISOString().split('T')[0];
-    return todoDate === selectedDate;
-  });
+  const filteredTodos = todos.filter(todo => todo.date === selectedDate);
 
   const addTodo = async (e) => {
     e.preventDefault();
     if (!input) return;
     try {
-      await axios.post(API_URL, { title: input });
+      // 👇 현재 달력에서 선택된 날짜(selectedDate)를 서버에 함께 보냅니다.
+      await axios.post(API_URL, { 
+        title: input, 
+        date: selectedDate 
+      });
       setInput('');
       fetchTodos();
     } catch (error) {
