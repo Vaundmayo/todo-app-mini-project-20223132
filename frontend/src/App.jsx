@@ -6,7 +6,7 @@ function App() {
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
 
-  const API_URL = 'http://localhost:5000/api/todos';
+  const API_URL = '/api/todos';
 
   // 1. 목록 가져오기 (Read)
   const fetchTodos = async () => {
