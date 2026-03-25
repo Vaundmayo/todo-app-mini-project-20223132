@@ -7,16 +7,19 @@ function App() {
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-
-  // 1. 선택된 날짜 상태 추가 (기본값: 오늘 날짜 YYYY-MM-DD 형식)
+  // 초기 날짜 설정
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // 1. 페이지네이션 상태 추가
+  const [currentPage, setCurrentPage] = useState(1);
+  const postsPerPage = 3; // 한 페이지에 보여줄 개수
 
   const fetchTodos = async () => {
     setIsLoading(true);
     try {
       const response = await axios.get(API_URL);
       // 최신순 정렬
-      setTodos(response.data);
+      setTodos(response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
       console.error("데이터 로드 실패:", error);
     } finally {
@@ -28,20 +31,33 @@ function App() {
     fetchTodos();
   }, []);
 
-  // 2. 현재 선택된 날짜에 해당하는 할 일만 필터링
+  // 날짜 변경 시 페이지를 1페이지로 초기화
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedDate]);
+
+  // 기준 필터링: DB의 date 필드와 selectedDate를 비교
   const filteredTodos = todos.filter(todo => todo.date === selectedDate);
+
+  // 2. 현재 페이지에 해당하는 데이터 계산
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentTodos = filteredTodos.slice(indexOfFirstPost, indexOfLastPost);
+
+  // 3. 페이지 변경 함수
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const addTodo = async (e) => {
     e.preventDefault();
     if (!input) return;
     try {
-      // 👇 현재 달력에서 선택된 날짜(selectedDate)를 서버에 함께 보냅니다.
       await axios.post(API_URL, { 
         title: input, 
         date: selectedDate 
       });
       setInput('');
       fetchTodos();
+      setCurrentPage(1); // 추가 후 1페이지로 이동
     } catch (error) {
       console.error("추가 실패:", error);
     }
@@ -71,129 +87,152 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased text-gray-900">
       
-      <div className="max-w-xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:shadow-indigo-200">
+      {/* 4. 가로 배치 컨테이너 (Flexbox 사용) */}
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 items-start">
         
-        {/* 헤더 섹션 */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-center">
-          <h1 className="text-4xl font-extrabold text-white flex items-center justify-center gap-3 tracking-tight">
-            <span className="text-5xl">✨</span>
-              My Task Planner
-          </h1>
-  
-          {/* 3. 날짜 표시 영역을 날짜 선택기로 변경 */}
-          <label className="mt-4 inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-6 py-2 rounded-full border border-white/20 hover:bg-white/20 transition-all cursor-pointer group">
-            <span className="text-xl">📅</span>
-            <input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              // 클릭 시 브라우저 날짜 선택기 강제 실행
-              onClick={(e) => e.target.showPicker && e.target.showPicker()}
-              className="bg-transparent border-none outline-none cursor-pointer text-white font-bold [color-scheme:dark] group-hover:text-indigo-100 transition-colors"
-            />
-          </label>
-  
-          <p className="text-indigo-100 mt-3 text-lg font-medium opacity-90">
-            {selectedDate === new Date().toISOString().split('T')[0] ? "오늘" : selectedDate}의 할 일을 계획해보세요.
-          </p>
-        </div>
-        
-        <div className="p-8">
-          
-          <form onSubmit={addTodo} className="flex gap-3 mb-10 items-center">
-            <input 
-              className="flex-1 px-6 py-4 border-2 border-indigo-100 rounded-full focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-400 transition-all text-lg placeholder:text-gray-300"
-              value={input} 
-              onChange={(e) => setInput(e.target.value)} 
-              placeholder="무엇을 해야 하나요?"
-            />
-            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-full font-bold text-lg transition-colors flex items-center gap-2 shadow-lg shadow-indigo-100 active:scale-95 transform">
-              <span className="text-2xl">+</span>
-              추가
-            </button>
-          </form>
+        {/* 👈 왼쪽 사이드바: 날짜 및 통계 */}
+        <div className="w-full lg:w-1/3 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 lg:sticky lg:top-12">
+          <div className="text-center mb-10 border-b border-gray-100 pb-8">
+            <h1 className="text-3xl font-black text-blue-700 flex items-center justify-center gap-3 tracking-tight">
+              <span className="text-4xl">🔥</span>
+              作 心 三 日
+              <span className="text-4xl">🔥</span>
+            </h1>
 
-          {/* 4. 통계 섹션 (목록 위로 배치 & 간격 확보를 위해 mb-12 적용) */}
-          {filteredTodos.length > 0 && (
-            <div className="mb-12 bg-indigo-50/50 rounded-2xl p-6 border border-indigo-100">
-              <div className="flex justify-between items-end mb-4">
+            <h1 className="text-3xl font-black text-blue-700 flex items-center justify-center gap-3 tracking-tight">
+              <span className="text-4xl">🔥</span>
+              작 심 삼 일
+              <span className="text-4xl">🔥</span>
+            </h1>
+            
+            <label className="mt-6 inline-flex items-center gap-3 bg-blue-50 px-6 py-3 rounded-full border border-blue-100 hover:bg-blue-100 transition-all cursor-pointer group w-full justify-center">
+              <span className="text-xl">📅</span>
+              <input 
+                type="date" 
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                className="bg-transparent border-none outline-none cursor-pointer text-blue-900 font-bold text-lg group-hover:text-blue-700 transition-colors"
+              />
+            </label>
+            <p className="text-gray-500 mt-4 font-medium">선택한 날짜의 할 일을 관리하세요.</p>
+          </div>
+
+          {/* 통계 섹션 */}
+          {filteredTodos.length > 0 ? (
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-lg shadow-blue-100">
+              <div className="flex justify-between items-end mb-5 font-bold">
                 <div>
-                  <h2 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Progress</h2>
-                  <p className="text-2xl font-black text-indigo-900">
+                  <h2 className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-1">Progress</h2>
+                  <p className="text-3xl font-black">
                     {Math.round((filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100)}% 완료
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className="text-indigo-600 font-bold text-lg">{filteredTodos.filter(t => t.completed).length}</span>
-                  <span className="text-gray-400 mx-1">/</span>
-                  <span className="text-gray-600 font-medium">{filteredTodos.length}</span>
-                </div>
+                <p className="text-lg opacity-80">
+                  {filteredTodos.filter(t => t.completed).length} / {filteredTodos.length}
+                </p>
               </div>
-
-              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden border border-white/10 shadow-inner">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out"
+                  className="h-full bg-white transition-all duration-500 rounded-full shadow"
                   style={{ width: `${(filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100}%` }}
                 ></div>
               </div>
-
-              <p className="mt-3 text-sm text-indigo-500 font-medium">
+               <p className="mt-4 text-center text-indigo-100 font-medium text-sm">
                 {Math.round((filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100) === 100 
                   ? "🎉 완벽해요! 모든 일을 끝내셨군요." 
-                  : "조금만 더 힘내세요! 할 수 있습니다. 💪"}
+                  : "조금만 더 힘내세요! 💪"}
               </p>
             </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-2xl border border-gray-100 text-gray-400">
+              <span className="text-5xl block mb-3">☕</span>
+              <p className="font-medium">이 날은 할 일이 없네요!</p>
+            </div>
           )}
+        </div>
 
-          {/* 📝 할 일 목록 섹션 */}
-          <div className="space-y-4">
-            <h3 className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+        {/* 👉 오른쪽 메인 섹션: 추가 및 목록 (페이지네이션 적용) */}
+        {/* 오른쪽 메인 섹션 */}
+        <div className="w-full lg:w-2/3 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col min-h-[650px]">
+          
+          <div className="border-b border-gray-100 pb-8 mb-8">
+            <h3 className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
               <span className="w-6 h-[1px] bg-gray-200"></span>
-              Task List for {selectedDate}
+              ADD TASK FOR {selectedDate}
             </h3>
-
-            {isLoading ? (
-              <div className="text-center py-20 text-gray-400 flex flex-col items-center gap-4">
-                <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                데이터를 가져오는 중...
-              </div>
-            ) : filteredTodos.length === 0 ? (
-              <div className="text-center py-20 text-gray-400 flex flex-col items-center gap-6 border-2 border-dashed border-gray-100 rounded-2xl">
-                <span className="text-7xl">☕</span>
-                <p className="text-xl font-semibold">이 날은 할 일이 없네요!<br/>여유를 즐겨보세요.</p>
-              </div>
-            ) : (
-              <ul className="space-y-4">
-                {filteredTodos.map(todo => (
-                  <li key={todo._id} className="flex items-center justify-between bg-white p-5 rounded-2xl border border-gray-100 shadow-sm group hover:border-indigo-100 hover:shadow-indigo-50 hover:bg-indigo-50/30 transition-all duration-300 transform hover:-translate-y-1">
-                    <div className="flex items-center gap-4 flex-1">
-                      <input 
-                        type="checkbox" 
-                        className="w-7 h-7 text-indigo-600 rounded-full border-2 border-indigo-200 focus:ring-indigo-500 cursor-pointer transition-colors"
-                        checked={todo.completed} 
-                        onChange={() => toggleComplete(todo._id, todo.completed)}
-                      />
-                      <span className={`text-xl font-medium transition-all duration-300 break-words flex-1 ${todo.completed ? 'line-through text-gray-400 opacity-60' : 'text-gray-800'}`}>
-                        {todo.title}
-                      </span>
-                    </div>
-                    <button 
-                      onClick={() => deleteTodo(todo._id)}
-                      className="ml-4 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-300 font-semibold p-2 rounded-full hover:bg-red-50"
-                    >
-                      삭제
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <form onSubmit={addTodo} className="flex gap-3 items-center">
+              <input 
+                className="flex-1 px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all text-lg placeholder:text-gray-300"
+                value={input} 
+                onChange={(e) => setInput(e.target.value)} 
+                placeholder="무엇을 해야 하나요?"
+              />
+              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg active:scale-95 transform">추가</button>
+            </form>
           </div>
+
+          {/* 목록 표시 영역: flex-1을 주어 공간을 가득 채우고 justify-between으로 버튼을 아래로 밀어냄 */}
+          <div className="flex-1 flex flex-col justify-between">
+            <div>
+              {isLoading ? (
+                <div className="text-center py-20 text-gray-400 animate-pulse font-medium">로딩 중...</div>
+              ) : filteredTodos.length === 0 ? (
+                <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100 text-gray-400 font-semibold text-xl">📝 계획을 세워보세요.</div>
+              ) : (
+                <ul className="space-y-4">
+                  {currentTodos.map(todo => (
+                    <li key={todo._id} className="flex items-center justify-between bg-white p-5 rounded-2xl border border-gray-100 shadow-sm group hover:border-blue-100 transition-all duration-300 transform hover:-translate-y-0.5">
+                      <div className="flex items-center gap-4 flex-1">
+                        <input type="checkbox" className="w-7 h-7 text-blue-600 rounded-full border-2 border-blue-200 cursor-pointer" checked={todo.completed} onChange={() => toggleComplete(todo._id, todo.completed)} />
+                        <span className={`text-xl font-semibold break-words flex-1 ${todo.completed ? 'line-through text-gray-400 opacity-70' : 'text-gray-800'}`}>{todo.title}</span>
+                      </div>
+                      <button onClick={() => deleteTodo(todo._id)} className="ml-4 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-2 rounded-full hover:bg-red-50">삭제</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+                {/* 페이지네이션 버튼 섹션: mt-auto와 pt를 이용해 하단에 고정 */}
+                {filteredTodos.length > postsPerPage && (
+                <div className="mt-auto pt-10 border-t border-gray-100 flex justify-center items-center gap-3">
+                  <button 
+                    onClick={() => paginate(currentPage - 1)} 
+                    disabled={currentPage === 1} 
+                    className="px-5 py-2 bg-gray-50 text-blue-600 rounded-xl font-bold border border-blue-100 disabled:opacity-30 disabled:hover:bg-gray-50 transition-all hover:bg-blue-50 active:scale-95"
+                  >
+                    &larr; 이전
+                  </button>
+                
+                  <div className="flex gap-2">
+                    {[...Array(Math.ceil(filteredTodos.length / postsPerPage)).keys()].map(number => (
+                      <button 
+                       key={number + 1} 
+                        onClick={() => paginate(number + 1)} 
+                        className={`w-11 h-11 rounded-2xl text-sm font-black transition-all ${currentPage === number + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110' : 'bg-white text-blue-600 border border-blue-100 hover:bg-blue-50'}`}
+                      >
+                        {number + 1}
+                      </button>
+                    ))}
+                  </div>
+                
+                  <button 
+                    onClick={() => paginate(currentPage + 1)} 
+                    disabled={currentPage === Math.ceil(filteredTodos.length / postsPerPage)} 
+                    className="px-5 py-2 bg-gray-50 text-blue-600 rounded-xl font-bold border border-blue-100 disabled:opacity-30 disabled:hover:bg-gray-50 transition-all hover:bg-blue-50 active:scale-95"
+                  >
+                    다음 &rarr;
+                  </button>
+                </div>
+              )}
+            </div>
         </div>
       </div>
 
-      <footer className="text-center mt-12 text-indigo-400 font-medium">
+      <footer className="text-center mt-16 text-slate-400 font-medium">
         &copy; 2026 Todo Planner - 20223132 임민수
       </footer>
     </div>
