@@ -70,13 +70,29 @@ function App() {
       <div className="max-w-xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:shadow-indigo-200">
         
         {/* 헤더 섹션: 그라데이션 배경 */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8">
-          <h1 className="text-4xl font-extrabold text-white text-center flex items-center justify-center gap-3 tracking-tight">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-center">
+          <h1 className="text-4xl font-extrabold text-white flex items-center justify-center gap-3 tracking-tight">
             <span className="text-5xl">✨</span>
-            My Task Planner
+              My Task Planner
           </h1>
-          <p className="text-indigo-100 text-center mt-3 text-lg font-medium">오늘의 할 일을 멋지게 계획해보세요.</p>
+  
+      {/* 👇 현재 날짜 표시 영역 */}
+      <div className="mt-4 inline-block bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20">
+          <p className="text-indigo-50 font-semibold flex items-center gap-2">
+            <span className="text-xl">📅</span>
+              {new Date().toLocaleDateString('ko-KR', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                weekday: 'long' 
+              })}
+          </p>
         </div>
+  
+        <p className="text-indigo-100 mt-3 text-lg font-medium opacity-90">
+          오늘의 할 일을 멋지게 계획해보세요.
+        </p>
+      </div>
         
         {/* 입력 및 리스트 섹션 */}
         <div className="p-8">
@@ -139,7 +155,7 @@ function App() {
             </ul>
           )}
 
-          {/* 하단 통계 (선택 사항) */}
+          {/* 하단 통계 */}
           {todos.length > 0 && (
           <div className="mb-8 bg-indigo-50/50 rounded-2xl p-6 border border-indigo-100">
             <div className="flex justify-between items-end mb-4">
@@ -166,12 +182,12 @@ function App() {
 
           {/* 간단한 격려 문구 */}
           <p className="mt-3 text-sm text-indigo-500 font-medium">
-              {Math.round((todos.filter(t => t.completed).length / todos.length) * 100) === 100 
-        ? "🎉 완벽해요! 모든 일을 끝내셨군요." 
-        : "조금만 더 힘내세요! 할 수 있습니다. 💪"}
-        </p>
-      </div>
-)}
+            {Math.round((todos.filter(t => t.completed).length / todos.length) * 100) === 100 
+              ? "🎉 완벽해요! 모든 일을 끝내셨군요." 
+              : "조금만 더 힘내세요! 할 수 있습니다. 💪"}
+            </p>
+          </div>
+          )}
         </div>
         
       </div>
@@ -182,6 +198,7 @@ function App() {
       </footer>
 
     </div>
+          
   )
 }
 
