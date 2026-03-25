@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-const API_URL = import.meta.env.VITE_API_URL || '/api/todos';
 
 function App() {
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
 
-  const API_URL = '/api/todos';
-
+  const API_URL = import.meta.env.VITE_API_URL || '/api/todos';
+  
   // 1. 목록 가져오기 (Read)
   const fetchTodos = async () => {
     try {
