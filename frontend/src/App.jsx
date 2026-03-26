@@ -40,6 +40,42 @@ function App() {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // 연속 달성일 계산
+  const calculateStreak = () => {
+    const completedDates = new Set(
+      todos.filter(t => t.completed).map(t => t.date)
+    );
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      if (completedDates.has(dateStr)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const streak = calculateStreak();
+
+  const getStreakMessage = (streak) => {
+    if (streak === 0) return { emoji: '😴', text: '아직 시작 전이에요. 오늘부터 시작해요!', color: 'from-gray-100 to-gray-50', textColor: 'text-gray-500', badge: 'bg-gray-100 text-gray-400' };
+    if (streak === 1) return { emoji: '🌱', text: '오늘 첫 번째 달성! 내일도 이어가세요.', color: 'from-green-50 to-emerald-50', textColor: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-600' };
+    if (streak < 3) return { emoji: '🔥', text: `${streak}일 연속 달성 중! 좋은 출발이에요.`, color: 'from-orange-50 to-amber-50', textColor: 'text-orange-700', badge: 'bg-orange-100 text-orange-600' };
+    if (streak < 7) return { emoji: '⚡', text: `${streak}일 연속 달성! 습관이 만들어지고 있어요.`, color: 'from-yellow-50 to-amber-50', textColor: 'text-amber-700', badge: 'bg-amber-100 text-amber-600' };
+    if (streak < 14) return { emoji: '🏆', text: `${streak}일 연속 달성! 대단한 의지력이에요!`, color: 'from-blue-50 to-indigo-50', textColor: 'text-blue-700', badge: 'bg-blue-100 text-blue-600' };
+    return { emoji: '👑', text: `${streak}일 연속 달성! 당신은 전설입니다!`, color: 'from-purple-50 to-violet-50', textColor: 'text-violet-700', badge: 'bg-violet-100 text-violet-600' };
+  };
+
+  const streakInfo = getStreakMessage(streak);
+
   const addTodo = async (e) => {
     e.preventDefault();
     if (!input) return;
@@ -94,13 +130,13 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased text-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 py-8 px-4 sm:px-6 lg:px-8 font-sans antialiased text-gray-900">
       
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 items-stretch">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 items-stretch">
         
         {/* 왼쪽 사이드바 */}
         <div className="w-full lg:w-1/3 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col">
-          <div className="text-center mb-10 border-b border-gray-100 pb-8">
+          <div className="text-center mb-6 border-b border-gray-100 pb-6">
             <h1 className="text-3xl font-black text-blue-700 flex items-center justify-center gap-3 tracking-tight">
               <span className="text-4xl">🔥</span>
               作 心 三 日
@@ -123,11 +159,44 @@ function App() {
                 className="bg-transparent border-none outline-none cursor-pointer text-blue-900 font-bold text-lg group-hover:text-blue-700 transition-colors"
               />
             </label>
-            <p className="text-gray-500 mt-4 font-medium">선택한 날짜의 할 일을 관리하세요.</p>
+            <p className="text-gray-500 mt-3 font-medium">선택한 날짜의 할 일을 관리하세요.</p>
           </div>
 
           {/* 통계 + 삭제 버튼: 하단 고정 */}
-          <div className="mt-auto flex flex-col gap-4">
+          <div className="mt-auto flex flex-col gap-6">
+
+            {/* 🔥 연속 달성 스트릭 카드 */}
+            <div className={`bg-gradient-to-br ${streakInfo.color} rounded-2xl p-5 border border-white shadow-sm`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{streakInfo.emoji}</span>
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-0.5">Streak</p>
+                    <p className={`text-sm font-bold ${streakInfo.textColor} leading-snug`}>{streakInfo.text}</p>
+                  </div>
+                </div>
+                <div className={`flex-shrink-0 ml-2 px-3 py-1.5 rounded-xl font-black text-2xl ${streakInfo.badge}`}>
+                  {streak}
+                  <span className="text-xs font-bold ml-0.5">일</span>
+                </div>
+              </div>
+              {streak > 0 && (
+                <div className="mt-3 flex gap-1">
+                  {Array.from({ length: Math.min(streak, 14) }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-1.5 flex-1 rounded-full bg-current opacity-30"
+                      style={{ color: streak >= 14 ? '#7c3aed' : streak >= 7 ? '#1d4ed8' : streak >= 3 ? '#d97706' : '#059669' }}
+                    />
+                  ))}
+                  {streak > 14 && (
+                    <div className="h-1.5 w-4 rounded-full bg-violet-400 opacity-60 flex items-center justify-center">
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {filteredTodos.length > 0 ? (
               <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-blue-100">
                 <div className="flex justify-between items-end mb-4 font-bold">
@@ -250,7 +319,7 @@ function App() {
         </div>
       </div>
 
-      <footer className="text-center mt-16 text-slate-400 font-medium">
+      <footer className="text-center mt-8 text-slate-400 font-medium">
         &copy; 2026 Todo Planner - 20223132 임민수
       </footer>
     </div>
