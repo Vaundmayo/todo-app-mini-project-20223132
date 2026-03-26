@@ -10,7 +10,7 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 3;
+  const postsPerPage = 4;
 
   const fetchTodos = async () => {
     setIsLoading(true);
@@ -42,9 +42,20 @@ function App() {
 
   // 연속 달성일 계산
   const calculateStreak = () => {
-    const completedDates = new Set(
-      todos.filter(t => t.completed).map(t => t.date)
-    );
+    // 1. 날짜별로 모든 할 일이 완료되었는지 확인하는 맵 생성
+    const dateStatus = new Map();
+    
+    // 할 일들을 날짜별로 그룹화하여 체크
+    todos.forEach(t => {
+      if (!dateStatus.has(t.date)) {
+        dateStatus.set(t.date, { allCompleted: true, hasTodo: true });
+      }
+      
+      // 하나라도 완료되지 않은 게 있다면 false
+      if (!t.completed) {
+        dateStatus.set(t.date, { ...dateStatus.get(t.date), allCompleted: false });
+      }
+    });
 
     let streak = 0;
     const today = new Date();
@@ -53,11 +64,21 @@ function App() {
     for (let i = 0; i < 365; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      if (completedDates.has(dateStr)) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      const status = dateStatus.get(dateStr);
+
+      if (status && status.hasTodo && status.allCompleted) {
         streak++;
       } else {
-        break;
+        if (i === 0) {
+          continue;
+        } else {
+          break;
+        }
       }
     }
     return streak;
@@ -247,7 +268,7 @@ function App() {
         {/* 오른쪽 메인 섹션 */}
         <div className="w-full lg:w-2/3 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col min-h-[600px]">
           
-          <div className="border-b border-gray-100 pb-8 mb-8">
+          <div className="border-b border-gray-100 pb-8 mb-4">
             <h3 className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
               <span className="w-6 h-[1px] bg-gray-200"></span>
               ADD TASK FOR {selectedDate}
