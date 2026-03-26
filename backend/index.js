@@ -74,6 +74,18 @@ app.delete('/api/todos/:id', async (req, res) => {
   }
 });
 
+// [DELETE] 특정 날짜의 모든 할 일 삭제
+app.delete('/api/todos/date/:date', async (req, res) => {
+  try {
+    const { date } = req.params;
+    // 해당 날짜와 일치하는 모든 문서를 삭제합니다.
+    const result = await Todo.deleteMany({ date: date });
+    res.json({ message: `${result.deletedCount}개의 계획이 삭제되었습니다.` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // 로컬 테스트용 서버 실행
 const PORT = process.env.PORT || 5000;
 

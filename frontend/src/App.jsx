@@ -7,18 +7,15 @@ function App() {
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  // 초기 날짜 설정
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // 1. 페이지네이션 상태 추가
   const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 3; // 한 페이지에 보여줄 개수
+  const postsPerPage = 3;
 
   const fetchTodos = async () => {
     setIsLoading(true);
     try {
       const response = await axios.get(API_URL);
-      // 최신순 정렬
       setTodos(response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
       console.error("데이터 로드 실패:", error);
@@ -31,20 +28,16 @@ function App() {
     fetchTodos();
   }, []);
 
-  // 날짜 변경 시 페이지를 1페이지로 초기화
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedDate]);
 
-  // 기준 필터링: DB의 date 필드와 selectedDate를 비교
   const filteredTodos = todos.filter(todo => todo.date === selectedDate);
 
-  // 2. 현재 페이지에 해당하는 데이터 계산
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
   const currentTodos = filteredTodos.slice(indexOfFirstPost, indexOfLastPost);
 
-  // 3. 페이지 변경 함수
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const addTodo = async (e) => {
@@ -57,7 +50,7 @@ function App() {
       });
       setInput('');
       fetchTodos();
-      setCurrentPage(1); // 추가 후 1페이지로 이동
+      setCurrentPage(1);
     } catch (error) {
       console.error("추가 실패:", error);
     }
@@ -86,14 +79,27 @@ function App() {
     }
   };
 
+  // 선택 날짜 전체 삭제
+  const deleteAllByDate = async () => {
+    if (filteredTodos.length === 0) return;
+    if (!window.confirm(`${selectedDate}의 할 일 ${filteredTodos.length}개를 모두 삭제하시겠습니까?`)) return;
+    try {
+      await Promise.all(filteredTodos.map(todo => axios.delete(`${API_URL}/${todo._id}`)));
+      setTodos(todos.filter(todo => todo.date !== selectedDate));
+      setCurrentPage(1);
+    } catch (error) {
+      console.error("전체 삭제 실패:", error);
+      fetchTodos();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-100 py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased text-gray-900">
       
-      {/* 4. 가로 배치 컨테이너 (Flexbox 사용) */}
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 items-start">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 items-stretch">
         
-        {/* 👈 왼쪽 사이드바: 날짜 및 통계 */}
-        <div className="w-full lg:w-1/3 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 lg:sticky lg:top-12">
+        {/* 왼쪽 사이드바 */}
+        <div className="w-full lg:w-1/3 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col">
           <div className="text-center mb-10 border-b border-gray-100 pb-8">
             <h1 className="text-3xl font-black text-blue-700 flex items-center justify-center gap-3 tracking-tight">
               <span className="text-4xl">🔥</span>
@@ -120,43 +126,57 @@ function App() {
             <p className="text-gray-500 mt-4 font-medium">선택한 날짜의 할 일을 관리하세요.</p>
           </div>
 
-          {/* 통계 섹션 */}
-          {filteredTodos.length > 0 ? (
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-lg shadow-blue-100">
-              <div className="flex justify-between items-end mb-5 font-bold">
-                <div>
-                  <h2 className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-1">Progress</h2>
-                  <p className="text-3xl font-black">
-                    {Math.round((filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100)}% 완료
+          {/* 통계 + 삭제 버튼: 하단 고정 */}
+          <div className="mt-auto flex flex-col gap-4">
+            {filteredTodos.length > 0 ? (
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg shadow-blue-100">
+                <div className="flex justify-between items-end mb-4 font-bold">
+                  <div>
+                    <h2 className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-1">Progress</h2>
+                    <p className="text-2xl font-black">
+                      {Math.round((filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100)}% 완료
+                    </p>
+                  </div>
+                  <p className="text-base opacity-80">
+                    {filteredTodos.filter(t => t.completed).length} / {filteredTodos.length}
                   </p>
                 </div>
-                <p className="text-lg opacity-80">
-                  {filteredTodos.filter(t => t.completed).length} / {filteredTodos.length}
+                <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden border border-white/10 shadow-inner">
+                  <div 
+                    className="h-full bg-white transition-all duration-500 rounded-full shadow"
+                    style={{ width: `${(filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100}%` }}
+                  ></div>
+                </div>
+                <p className="mt-3 text-center text-indigo-100 font-medium text-sm">
+                  {Math.round((filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100) === 100 
+                    ? "🎉 완벽해요! 모든 일을 끝내셨군요." 
+                    : "조금만 더 힘내세요! 💪"}
                 </p>
               </div>
-              <div className="w-full h-3 bg-white/20 rounded-full overflow-hidden border border-white/10 shadow-inner">
-                <div 
-                  className="h-full bg-white transition-all duration-500 rounded-full shadow"
-                  style={{ width: `${(filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100}%` }}
-                ></div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-2xl border border-gray-100 text-gray-400">
+                <span className="text-4xl block mb-2">☕</span>
+                <p className="font-medium">이 날은 할 일이 없네요!</p>
               </div>
-               <p className="mt-4 text-center text-indigo-100 font-medium text-sm">
-                {Math.round((filteredTodos.filter(t => t.completed).length / filteredTodos.length) * 100) === 100 
-                  ? "🎉 완벽해요! 모든 일을 끝내셨군요." 
-                  : "조금만 더 힘내세요! 💪"}
-              </p>
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-2xl border border-gray-100 text-gray-400">
-              <span className="text-5xl block mb-3">☕</span>
-              <p className="font-medium">이 날은 할 일이 없네요!</p>
-            </div>
-          )}
+            )}
+
+            <button
+              onClick={deleteAllByDate}
+              disabled={filteredTodos.length === 0}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all
+                bg-red-50 text-red-400 border border-red-100
+                hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-100
+                disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-red-50 disabled:hover:text-red-400 disabled:hover:border-red-100 disabled:hover:shadow-none
+                active:scale-95"
+            >
+              <span>🗑️</span>
+              {selectedDate} 전체 삭제
+            </button>
+          </div>
         </div>
 
-        {/* 👉 오른쪽 메인 섹션: 추가 및 목록 (페이지네이션 적용) */}
         {/* 오른쪽 메인 섹션 */}
-        <div className="w-full lg:w-2/3 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col min-h-[650px]">
+        <div className="w-full lg:w-2/3 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col min-h-[600px]">
           
           <div className="border-b border-gray-100 pb-8 mb-8">
             <h3 className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -174,7 +194,6 @@ function App() {
             </form>
           </div>
 
-          {/* 목록 표시 영역: flex-1을 주어 공간을 가득 채우고 justify-between으로 버튼을 아래로 밀어냄 */}
           <div className="flex-1 flex flex-col justify-between">
             <div>
               {isLoading ? (
@@ -196,39 +215,38 @@ function App() {
               )}
             </div>
 
-                {/* 페이지네이션 버튼 섹션: mt-auto와 pt를 이용해 하단에 고정 */}
-                {filteredTodos.length > postsPerPage && (
-                <div className="mt-auto pt-10 border-t border-gray-100 flex justify-center items-center gap-3">
-                  <button 
-                    onClick={() => paginate(currentPage - 1)} 
-                    disabled={currentPage === 1} 
-                    className="px-5 py-2 bg-gray-50 text-blue-600 rounded-xl font-bold border border-blue-100 disabled:opacity-30 disabled:hover:bg-gray-50 transition-all hover:bg-blue-50 active:scale-95"
-                  >
-                    &larr; 이전
-                  </button>
-                
-                  <div className="flex gap-2">
-                    {[...Array(Math.ceil(filteredTodos.length / postsPerPage)).keys()].map(number => (
-                      <button 
-                       key={number + 1} 
-                        onClick={() => paginate(number + 1)} 
-                        className={`w-11 h-11 rounded-2xl text-sm font-black transition-all ${currentPage === number + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110' : 'bg-white text-blue-600 border border-blue-100 hover:bg-blue-50'}`}
-                      >
-                        {number + 1}
-                      </button>
-                    ))}
-                  </div>
-                
-                  <button 
-                    onClick={() => paginate(currentPage + 1)} 
-                    disabled={currentPage === Math.ceil(filteredTodos.length / postsPerPage)} 
-                    className="px-5 py-2 bg-gray-50 text-blue-600 rounded-xl font-bold border border-blue-100 disabled:opacity-30 disabled:hover:bg-gray-50 transition-all hover:bg-blue-50 active:scale-95"
-                  >
-                    다음 &rarr;
-                  </button>
+            {filteredTodos.length > postsPerPage && (
+              <div className="mt-auto pt-10 border-t border-gray-100 flex justify-center items-center gap-3">
+                <button 
+                  onClick={() => paginate(currentPage - 1)} 
+                  disabled={currentPage === 1} 
+                  className="px-5 py-2 bg-gray-50 text-blue-600 rounded-xl font-bold border border-blue-100 disabled:opacity-30 disabled:hover:bg-gray-50 transition-all hover:bg-blue-50 active:scale-95"
+                >
+                  &larr; 이전
+                </button>
+              
+                <div className="flex gap-2">
+                  {[...Array(Math.ceil(filteredTodos.length / postsPerPage)).keys()].map(number => (
+                    <button 
+                      key={number + 1} 
+                      onClick={() => paginate(number + 1)} 
+                      className={`w-11 h-11 rounded-2xl text-sm font-black transition-all ${currentPage === number + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-110' : 'bg-white text-blue-600 border border-blue-100 hover:bg-blue-50'}`}
+                    >
+                      {number + 1}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
+              
+                <button 
+                  onClick={() => paginate(currentPage + 1)} 
+                  disabled={currentPage === Math.ceil(filteredTodos.length / postsPerPage)} 
+                  className="px-5 py-2 bg-gray-50 text-blue-600 rounded-xl font-bold border border-blue-100 disabled:opacity-30 disabled:hover:bg-gray-50 transition-all hover:bg-blue-50 active:scale-95"
+                >
+                  다음 &rarr;
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
