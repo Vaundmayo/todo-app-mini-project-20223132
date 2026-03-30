@@ -1,5 +1,7 @@
 # 🚀 Full-Stack Todo App with Streak System
 
+> **프로젝트 배포 링크:** [배포 URL](https://todo-app-mini-project-20223132.vercel.app/)
+
 프론트엔드(React), 백엔드(Node.js), 데이터베이스(MongoDB)를 아우르는 풀스택 환경에서 구축된 할 일 관리 애플리케이션입니다. 단순한 CRUD 기능을 넘어, 사용자의 꾸준한 실천을 독려하기 위한 **스마트 스트릭(Streak) 시스템**이 구현되어 있습니다.
 
 ## 📅 프로젝트 개요
